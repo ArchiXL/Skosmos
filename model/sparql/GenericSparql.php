@@ -41,7 +41,7 @@ class GenericSparql {
     public function __construct($endpoint, $graph, $model) {
         $this->graph = $graph;
         $this->model = $model;
-
+        
         // create the EasyRDF SPARQL client instance to use
         $this->initializeHttpClient();
         $this->client = new EasyRdf\Sparql\Client($endpoint);
@@ -123,6 +123,15 @@ class GenericSparql {
     protected function initializeHttpClient() {
         // configure the HTTP client used by EasyRdf\Sparql\Client
         $httpclient = EasyRdf\Http::getDefaultHttpClient();
+        
+        // Retrieve the SPARQL endpoint authentication token from the config.ttl
+        $auth = $this->model->getConfig()->getLiteral('skosmos:sparqlEndpointAuth');
+        
+        // If an authentication token is provided, add it as a Bearer token in the HTTP headers
+        if ($auth) {
+            $httpclient->setHeaders('Authorization', 'Bearer ' . $auth);
+        }
+
         $httpclient->setConfig(array('timeout' => $this->model->getConfig()->getSparqlTimeout()));
 
         // if special cache control (typically no-cache) was requested by the
