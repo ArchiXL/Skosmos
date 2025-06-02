@@ -34,6 +34,40 @@ class RequestTest extends PHPUnit\Framework\TestCase
   }
 
   /**
+   * @covers Request::getQueryParamPOST
+   */
+  public function testGetQueryParamPOSTDefaultNull() {
+      $this->assertNull($this->request->getQueryParamPOST('notfoundatall'));
+  }
+
+  /**
+   * @covers Request::setQueryParamPOST
+   * @covers Request::getQueryParamPOST
+   */
+  public function testGetQueryParamPOSTSimple() {
+      $this->request->setQueryParamPOST('simple', 'value123');
+      $this->assertEquals($this->request->getQueryParamPOST('simple'), 'value123');
+  }
+
+  /**
+   * @covers Request::setQueryParamPOST
+   * @covers Request::getQueryParamPOST
+   */
+  public function testGetQueryParamPOSTTruncated() {
+      $this->request->setQueryParamPOST('truncated', 'very-long-value');
+      $this->assertEquals($this->request->getQueryParamPOST('truncated', 9), 'very-long');
+  }
+
+  /**
+   * @covers Request::setQueryParamPOST
+   * @covers Request::getQueryParamPOST
+   */
+  public function testGetQueryParamPOSTNotTruncated() {
+      $this->request->setQueryParamPOST('truncated', 'very-long-value');
+      $this->assertEquals($this->request->getQueryParamPOST('truncated', 20), 'very-long-value');
+  }
+
+  /**
    * @covers Request::getVocabList
    */
   public function testGetVocabList() {
@@ -238,6 +272,33 @@ class RequestTest extends PHPUnit\Framework\TestCase
     $this->request->setLang('en');
     $langurl = $this->request->getLangUrl();
     $this->assertEquals("http//example.com", $langurl);
+  }
+
+  /**
+   * @covers Request::getServerConstant
+   */
+  public function testGetServerConstant() {
+    $this->request->setServerConstant('PATH_INFO', '/myvocab/index/X');
+    $path_info = $this->request->getServerConstant('PATH_INFO');
+    $this->assertEquals('/myvocab/index/X', $path_info);
+  }
+
+  /**
+   * @covers Request::getServerConstant
+   */
+  public function testGetServerConstantDiacriticNotEncoded() {
+    $this->request->setServerConstant('PATH_INFO', '/myvocab/index/Ä');
+    $path_info = $this->request->getServerConstant('PATH_INFO');
+    $this->assertEquals('/myvocab/index/Ä', $path_info);
+  }
+
+  /**
+   * @covers Request::getServerConstant
+   */
+  public function testGetServerConstantQuoteIsEncoded() {
+    $this->request->setServerConstant('PATH_INFO', "/myvocab/index/'");
+    $path_info = $this->request->getServerConstant('PATH_INFO');
+    $this->assertEquals("/myvocab/index/\'", $path_info);
   }
 
 }

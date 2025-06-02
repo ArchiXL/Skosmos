@@ -32,6 +32,7 @@ class Concept extends VocabularyDataObject implements Modifiable
         'skos:member', # this shouldn't be shown on the group page
         'dc:created', # handled separately
         'dc:modified', # handled separately
+        'owl:deprecated', # indicated visually
     );
 
     /** related concepts that should be shown to users in the appendix */
@@ -660,7 +661,7 @@ class Concept extends VocabularyDataObject implements Modifiable
         foreach ($ret as $prop) {
             foreach ($prop->getValues() as $value) {
                 $label = $value->getLabel();
-                $propertyValues[(method_exists($label, 'getValue')) ? $label->getValue() : $label][] = $value->getType();
+                $propertyValues[(is_object($label) && method_exists($label, 'getValue')) ? $label->getValue() : $label][] = $value->getType();
             }
         }
 
@@ -698,9 +699,9 @@ class Concept extends VocabularyDataObject implements Modifiable
     }
 
     /**
-     * @return DateTime|null the modified date, or null if not available
+     * @return DateTime|null the modified date of this concept, or null if not available
      */
-    public function getModifiedDate()
+    public function getConceptModifiedDate()
     {
         // finding the modified properties
         /** @var \EasyRdf\Resource|\EasyRdf\Literal|null $modifiedResource */
@@ -709,9 +710,25 @@ class Concept extends VocabularyDataObject implements Modifiable
             return $modifiedResource->getValue();
         }
 
-        // if the concept does not have a modified date, we look for it in its
-        // vocabulary
-        return $this->getVocab()->getModifiedDate();
+        return null;
+    }
+
+
+    /**
+     * @return DateTime|null the modified date, or null if not available
+     */
+    public function getModifiedDate()
+    {
+        // check if this concept has a specific modified date
+        $conceptModified = $this->getConceptModifiedDate();
+
+        if ($conceptModified !== null) {
+            return $conceptModified;
+        } else {
+            // if the concept does not have a modified date, return the
+            // modified date of the vocabulary instead
+            return $this->getVocab()->getModifiedDate();
+        }
     }
 
     /**
@@ -728,7 +745,7 @@ class Concept extends VocabularyDataObject implements Modifiable
                 $created = $this->resource->get('dc:created')->getValue();
             }
 
-            $modified = $this->getModifiedDate();
+            $modified = $this->getConceptModifiedDate();
 
             // making a human readable string from the timestamps
             if ($created != '') {
